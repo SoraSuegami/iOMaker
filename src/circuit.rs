@@ -13,8 +13,6 @@ pub enum BooleanCircuitError {
     UnknownEvaledBit(GateId),
     #[error("The number of given inputs is {0}, but the input length is {1}.")]
     InvalidInputLen(usize, usize),
-    #[error("The number of output should be {0}, but it is {1}.")]
-    InvalidOutputLen(usize, usize),
     #[error("The evaled bit of the gate id {0} is constrained to {1} in the const gate, but its value is {2}")]
     InvalidBitOfConstGate(GateId, bool, bool),
     #[error("The gate of the gate id {0} is not supported.")]
@@ -47,9 +45,10 @@ pub trait BooleanCircuit<G: Gate> {
         gate_l_id: &GateId,
         gate_r_id: &GateId,
     ) -> Result<GateId, BooleanCircuitError>;
-    fn eval_first_output(
+    fn eval_output(
         &self,
         inputs: &[bool],
+        output_wire_id: &WireId,
         evaled_map: Option<&mut HashMap<GateId, bool>>,
     ) -> Result<bool, BooleanCircuitError>;
 }
@@ -62,7 +61,7 @@ pub struct NandBasedCircuit {
     pub output_len: usize,
     pub num_gate: usize,
     pub num_nand: usize,
-    pub num_const: usize
+    pub num_const: usize,
 }
 
 impl BooleanCircuit<BooleanGate> for NandBasedCircuit {
@@ -191,15 +190,17 @@ impl BooleanCircuit<BooleanGate> for NandBasedCircuit {
             depth: new_depth,
         };
         let new_gate_id = GateId(self.num_gate as u64);
-        self.gate_map.insert(new_gate_id, BooleanGate::Nand(nand_gate));
+        self.gate_map
+            .insert(new_gate_id, BooleanGate::Nand(nand_gate));
         self.num_gate += 1;
         self.num_nand += 1;
         Ok(new_gate_id)
     }
 
-    fn eval_first_output(
+    fn eval_output(
         &self,
         inputs: &[bool],
+        output_wire_id: &WireId,
         evaled_map: Option<&mut HashMap<GateId, bool>>,
     ) -> Result<bool, BooleanCircuitError> {
         if inputs.len() != self.input_len {
@@ -208,15 +209,15 @@ impl BooleanCircuit<BooleanGate> for NandBasedCircuit {
                 self.input_len,
             ));
         }
-        if self.output_len != 1 {
-            return Err(BooleanCircuitError::InvalidOutputLen(1, self.output_len));
+        if output_wire_id.0 >= (self.output_len() as u64) {
+            return Err(BooleanCircuitError::UnknownOutput(*output_wire_id));
         }
         let mut new_evaled_map = HashMap::<GateId, bool>::new();
         let mut evaled_map = match evaled_map {
             Some(m) => m,
             None => &mut new_evaled_map,
         };
-        let output_gate_id = self.output_to_gate_id(&WireId(0))?;
+        let output_gate_id = self.output_to_gate_id(output_wire_id)?;
         let output_gate = self.get_gate(&output_gate_id)?;
         self.eval_single_gate(inputs, output_gate_id, output_gate, &mut evaled_map)?;
         let output_bit = evaled_map

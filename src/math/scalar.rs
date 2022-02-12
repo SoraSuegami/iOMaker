@@ -1,10 +1,34 @@
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use ff::{Field, PrimeField};
 use num_bigint::BigUint;
-use num_traits::{pow::Pow, One, Zero};
+use num_traits::{pow::Pow, MulAdd, One, Zero};
 use rand::{distributions::Distribution, Rng};
-use std::fmt;
+use std::fmt::Display;
 
+pub trait Scalar:
+    Clone
+    + Copy
+    + Display
+    + PartialEq
+    + PartialOrd
+    + Eq
+    + Default
+    + Add
+    + Sub
+    + Mul
+    + Div
+    + AddAssign
+    + SubAssign
+    + MulAssign
+    + DivAssign
+    + Zero
+    + One
+{
+}
+
+impl Scalar for u32 {}
+impl Scalar for u64 {}
+/*
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Default)]
 pub struct Scalar<F: PrimeField>(pub F);
 
@@ -172,16 +196,17 @@ pub mod bls12_381 {
 
 #[cfg(test)]
 mod test {
-    use crate::scalar::bls12_381::BLS12F;
+    use super::bls12_381::BLS12F;
 
     use super::bls12_381::BLS12Scalar;
     use super::*;
     #[test]
     fn from_usize_test() {
-        println!("S: {}",BLS12F::S);
+        println!("S: {}", BLS12F::S);
         let five_from_usize = BLS12Scalar::from(5);
         let one = BLS12Scalar::one();
         let five = one + one + one + one + one;
         assert_eq!(five_from_usize, five);
     }
 }
+*/
