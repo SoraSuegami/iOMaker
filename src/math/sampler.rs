@@ -1,5 +1,4 @@
 use crate::scalar::Scalar;
-use ff::{Field, PrimeField};
 use nalgebra::{DMatrix, DVector};
 use num_bigint::BigUint;
 use thiserror::Error;

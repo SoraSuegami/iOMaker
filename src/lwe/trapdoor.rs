@@ -1,11 +1,7 @@
 use super::{LWEError, LWENoise, LWEParameter, LWESecret};
 use crate::math::Scalar;
-use ff::{Field, PrimeField};
-//use nalgebra::{DMatrix, DVector, U1};
-use nalgebra_sparse::*;
 use nalgebra_sparse::na::*;
-//use nalgebra::sparse::CsMatrix;
-use num_bigint::BigUint;
+use nalgebra_sparse::*;
 use rayon::prelude::*;
 use std::marker::PhantomData;
 use thiserror::Error;
@@ -27,7 +23,7 @@ pub trait Trapdoor<S: Scalar> {
     fn inverse_lwe(
         &self,
         sample: &DVector<S>,
-        trapdoor: Option<&CooMatrix<S>>
+        trapdoor: Option<&CooMatrix<S>>,
     ) -> Result<(DVector<S>, DVector<S>), TrapdoorError<S>>;
 }
 
@@ -61,11 +57,14 @@ impl<S: 'static + Scalar> Trapdoor<S> for Smooth2GadgetTrapdoor<S> {
     fn inverse_lwe(
         &self,
         sample: &DVector<S>,
-        trapdoor: Option<&CooMatrix<S>>
+        trapdoor: Option<&CooMatrix<S>>,
     ) -> Result<(DVector<S>, DVector<S>), TrapdoorError<S>> {
         let log_q_size = self.param.log_q_size;
         if sample.nrows() != log_q_size * self.param.secret_size {
-            return Err(TrapdoorError::InverseLWEError(Self::trapdoor_type, sample.clone()));
+            return Err(TrapdoorError::InverseLWEError(
+                Self::trapdoor_type,
+                sample.clone(),
+            ));
         }
         let mut vec_samples = Vec::new();
         for i in 0..self.param.secret_size {
@@ -103,15 +102,15 @@ impl<S: 'static + Scalar> Trapdoor<S> for Smooth2GadgetTrapdoor<S> {
 
 impl<S: 'static + Scalar> Smooth2GadgetTrapdoor<S> {
     pub fn new(param: LWEParameter<S>) -> Self {
-        Self {param}
+        Self { param }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Smooth2PrivateTrapdoor<S: Scalar> {
     param: LWEParameter<S>,
-    matrix_a_bar: DMatrix<S>,//n * m~
-    matrix_r: DMatrix<S>//m~ * nl
+    matrix_a_bar: DMatrix<S>, //n * m~
+    matrix_r: DMatrix<S>,     //m~ * nl
 }
 
 impl<S: 'static + Scalar> Trapdoor<S> for Smooth2PrivateTrapdoor<S> {
@@ -121,23 +120,23 @@ impl<S: 'static + Scalar> Trapdoor<S> for Smooth2PrivateTrapdoor<S> {
         let n = self.param.secret_size;
         let m_bar = self.matrix_a_bar.ncols();
         let log_q_size = self.param.log_q_size;
-        let m = m_bar + n*log_q_size;
+        let m = m_bar + n * log_q_size;
         let matrix_ar = &self.matrix_a_bar * &self.matrix_r;
         let mut mask = CooMatrix::new(n, m);
         let pub_td = Smooth2GadgetTrapdoor::new(self.param.clone());
         let gadget = CsrMatrix::from(&pub_td.gen_mask_matrix()?);
         for i in 0..n {
             for j in 0..m_bar {
-                let val:S = self.matrix_a_bar[(i,j)];
-                mask.push(i,j,val);
+                let val: S = self.matrix_a_bar[(i, j)];
+                mask.push(i, j, val);
             }
             for k in m_bar..m {
-                match gadget.index_entry(i, k-m_bar) {
+                match gadget.index_entry(i, k - m_bar) {
                     SparseEntry::Zero => {
-                        return Err(TrapdoorError::ZeroValue(i, k-m_bar));
-                    },
+                        return Err(TrapdoorError::ZeroValue(i, k - m_bar));
+                    }
                     SparseEntry::NonZero(g_val) => {
-                        let val = *g_val - matrix_ar[(i,k-m_bar)];
+                        let val = *g_val - matrix_ar[(i, k - m_bar)];
                         mask.push(i, k, val);
                     }
                 }
@@ -150,16 +149,16 @@ impl<S: 'static + Scalar> Trapdoor<S> for Smooth2PrivateTrapdoor<S> {
         let n = self.param.secret_size;
         let m_bar = self.matrix_a_bar.ncols();
         let log_q_size = self.param.log_q_size;
-        let m = m_bar + n*log_q_size;
+        let m = m_bar + n * log_q_size;
 
-        let mut trapdoor = CooMatrix::new(m, n*log_q_size);
+        let mut trapdoor = CooMatrix::new(m, n * log_q_size);
         for i in 0..m_bar {
-            for j in 0..(n*log_q_size) {
-                trapdoor.push(i,j,self.matrix_r[(i,j)]);
+            for j in 0..(n * log_q_size) {
+                trapdoor.push(i, j, self.matrix_r[(i, j)]);
             }
         }
-        for i in 0..(n*log_q_size) {
-            trapdoor.push(i,i,S::one());
+        for i in 0..(n * log_q_size) {
+            trapdoor.push(i, i, S::one());
         }
         Ok(Some(trapdoor))
     }
@@ -167,7 +166,7 @@ impl<S: 'static + Scalar> Trapdoor<S> for Smooth2PrivateTrapdoor<S> {
     fn inverse_lwe(
         &self,
         sample: &DVector<S>,
-        trapdoor: Option<&CooMatrix<S>>
+        trapdoor: Option<&CooMatrix<S>>,
     ) -> Result<(DVector<S>, DVector<S>), TrapdoorError<S>> {
         let sample = CsrMatrix::from(&sample.transpose());
         let trapdoor = trapdoor.ok_or(TrapdoorError::TrapdoorNotProvided)?;

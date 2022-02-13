@@ -1,6 +1,5 @@
 use super::LWEError;
 use crate::math::Scalar;
-use nalgebra::{DMatrix, DVector};
 use num_bigint::BigUint;
 use thiserror::Error;
 

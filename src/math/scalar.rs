@@ -1,11 +1,9 @@
-use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign, Neg};
-use ff::{Field, PrimeField};
-use num_bigint::BigUint;
+use core::ops::{AddAssign, DivAssign, MulAssign, Neg, SubAssign};
 use num_traits::{pow::Pow, Num};
-use rand::{distributions::Distribution, Rng};
+//use rand::{distributions::Distribution, Rng};
+use nalgebra_sparse::na::{ClosedAdd, ClosedMul, ClosedSub, Scalar as NaScalar};
 use std::fmt::{Debug, Display};
 use std::marker::Sync;
-use nalgebra_sparse::na::{Scalar as NaScalar,ClosedAdd,ClosedSub,ClosedMul};
 pub trait Scalar:
     Debug
     + Sized
@@ -19,7 +17,7 @@ pub trait Scalar:
     + Eq
     + Default
     + Num
-    + Neg<Output=Self>
+    + Neg<Output = Self>
     + AddAssign
     + SubAssign
     + MulAssign

@@ -10,7 +10,7 @@ nalgebra = { version = "0.29.0", features = ["rand", "sparse"]}
 nalgebra-sparse = "0.6.0"
 once_cell = "1.8.0"
 thiserror = "1.0.26"
-ff = { version = "0.11", features = ["derive"] }
+#ff = { version = "0.11", features = ["derive"] }
 rand="0.8.4"
 num-traits = "0.2.14"
 derive_more = "0.99.0"
