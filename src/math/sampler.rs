@@ -1,47 +1,54 @@
-use crate::scalar::Scalar;
+use crate::math::Scalar;
 use nalgebra::{DMatrix, DVector};
 use num_bigint::BigUint;
-use thiserror::Error;
+use rand::{
+    distributions::{Distribution, Uniform},
+    Rng,
+};
 use std::marker::PhantomData;
-use rand::{distributions::{Distribution,Uniform}, Rng};
-use super::{LWEError,LWEParameter};
+use thiserror::Error;
+//use super::{LWEError,LWEParameter};
 
-pub trait Sampler<S:Scalar> {
+pub trait Sampler<S: Scalar> {
     fn sample_scalar<R: Rng + ?Sized>(&self, rng: &mut R) -> S;
 
-    fn sample_vector<R: Rng + ?Sized>(&self, rng: &mut R, n:usize) -> DVector<S> {
-        DVector::from_fn(n,|_,_| Self::sample_scalar(rng))
+    fn sample_vector<R: Rng + ?Sized>(&self, rng: &mut R, n: usize) -> DVector<S> {
+        DVector::from_fn(n, |_, _| self.sample_scalar(rng))
     }
 
-    fn sample_matrix<R: Rng + ?Sized>(&self, rng: &mut R, n_row:usize, n_col:usize) -> DMatrix<S> {
-        DMatrix::from_fn(n_row, n_col, |_,_| Self::sample_scalar(rng))
+    fn sample_matrix<R: Rng + ?Sized>(
+        &self,
+        rng: &mut R,
+        n_row: usize,
+        n_col: usize,
+    ) -> DMatrix<S> {
+        DMatrix::from_fn(n_row, n_col, |_, _| self.sample_scalar(rng))
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct UniformSampler<S:Scalar, D:Distribution<S>> {
+pub struct UniformSampler<S: Scalar, D: Distribution<S>> {
     dist: D,
-    _s:PhantomData<S>
+    _s: PhantomData<S>,
 }
 
-impl<S:Scalar, D:Distribution<S>> Sampler for UniformSampler<S, D> {
-    fn sample_scalar<R: Rng + ?Sized>(rng: &mut R) -> Scalar<F> {
+impl<S: Scalar, D: Distribution<S>> Sampler<S> for UniformSampler<S, D> {
+    fn sample_scalar<R: Rng + ?Sized>(&self, rng: &mut R) -> S {
         self.dist.sample(rng)
     }
 }
 
-impl<S:Scalar, D:Distribution<S>> UniformSampler<S, D> {
-    pub fn new(dist:D) -> Self {
+impl<S: Scalar, D: Distribution<S>> UniformSampler<S, D> {
+    pub fn new(dist: D) -> Self {
         Self {
             dist,
-            _s:PhantomData
+            _s: PhantomData,
         }
     }
 }
 
-pub type UniformSamplerU32 = UniformSampler<u32, Uniform>;
-pub type UniformSamplerU64 = UniformSampler<u64, Uniform>;
+pub type UniformSamplerI32 = UniformSampler<i32, Uniform<i32>>;
+pub type UniformSamplerI64 = UniformSampler<i64, Uniform<i64>>;
 /*
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GaussianSampler<S:Scalar, D:Distribution<S>> {
@@ -55,8 +62,7 @@ impl<F:Filed> Sampler for GaussianSampler<F> {
     }
 }*/
 
-
-/* 
+/*
 pub struct LWESample<F:PrimeField> {
     pub matrix_a: DMatrix<Scalar<F>>,
     pub vector_b: DVector<Scalar<F>>,

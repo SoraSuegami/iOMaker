@@ -311,25 +311,24 @@ mod test {
 
     #[test]
     fn input1_output1() {
-        let mut circuit = DefaultCircuit::new();
+        let mut circuit = NandBasedCircuit::new();
         let input_gate_id = circuit.input().unwrap();
         circuit.output(input_gate_id).unwrap();
         assert_eq!(circuit.input_len(), 1);
         assert_eq!(circuit.output_len(), 1);
-        assert_eq!(circuit.depth_whole(), 0);
 
         let inputs = vec![true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
     }
 
     #[test]
     fn input1_not_ouput1() {
-        let mut circuit = DefaultCircuit::new();
+        let mut circuit = NandBasedCircuit::new();
         let input_gate_id = circuit.input().unwrap();
         let not_gate_id = circuit.not(&input_gate_id).unwrap();
         circuit.output(not_gate_id).unwrap();
@@ -338,120 +337,116 @@ mod test {
         assert_eq!(circuit.depth_whole(), 1);
 
         let inputs = vec![true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
 
         let inputs = vec![false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
     }
 
     #[test]
     fn input2_and_output1() {
-        let mut circuit = DefaultCircuit::new();
+        let mut circuit = NandBasedCircuit::new();
         let input_gate_id1 = circuit.input().unwrap();
         let input_gate_id2 = circuit.input().unwrap();
         let and_gate_id = circuit.and(&input_gate_id1, &input_gate_id2).unwrap();
         circuit.output(and_gate_id).unwrap();
         assert_eq!(circuit.input_len(), 2);
         assert_eq!(circuit.output_len(), 1);
-        assert_eq!(circuit.depth_whole(), 1);
 
         let inputs = vec![true, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![true, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
 
         let inputs = vec![false, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
 
         let inputs = vec![false, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
     }
 
     #[test]
     fn input2_or_output1() {
-        let mut circuit = DefaultCircuit::new();
+        let mut circuit = NandBasedCircuit::new();
         let input_gate_id1 = circuit.input().unwrap();
         let input_gate_id2 = circuit.input().unwrap();
         let or_gate_id = circuit.or(&input_gate_id1, &input_gate_id2).unwrap();
         circuit.output(or_gate_id).unwrap();
         assert_eq!(circuit.input_len(), 2);
         assert_eq!(circuit.output_len(), 1);
-        assert_eq!(circuit.depth_whole(), 1);
 
         let inputs = vec![true, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![true, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
     }
 
     #[test]
     fn input1_const_output1() {
-        let mut circuit = DefaultCircuit::new();
+        let mut circuit = NandBasedCircuit::new();
         let input_gate_id = circuit.input().unwrap();
         let const_gate_id = circuit.constant(&input_gate_id, true).unwrap();
         circuit.output(const_gate_id).unwrap();
         assert_eq!(circuit.input_len(), 1);
         assert_eq!(circuit.output_len(), 1);
-        assert_eq!(circuit.depth_whole(), 1);
 
         let inputs = vec![true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false];
-        let output = circuit.eval_first_output(&inputs, None);
+        let output = circuit.eval_output(&inputs, &WireId(0), None);
         assert_eq!(output.is_err(), true);
     }
 
     #[test]
     fn input_xor_output1() {
-        let mut circuit = DefaultCircuit::new();
+        let mut circuit = NandBasedCircuit::new();
         let input_gate_id1 = circuit.input().unwrap();
         let input_gate_id2 = circuit.input().unwrap();
         let or_gate_id = circuit.xor(&input_gate_id1, &input_gate_id2).unwrap();
         circuit.output(or_gate_id).unwrap();
         assert_eq!(circuit.input_len(), 2);
         assert_eq!(circuit.output_len(), 1);
-        assert_eq!(circuit.depth_whole(), 3);
 
         let inputs = vec![true, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
 
         let inputs = vec![true, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
     }
 
     #[test]
     fn input3_and_or_output1() {
-        let mut circuit = DefaultCircuit::new();
+        let mut circuit = NandBasedCircuit::new();
         let input_gate_id1 = circuit.input().unwrap();
         let input_gate_id2 = circuit.input().unwrap();
         let input_gate_id3 = circuit.input().unwrap();
@@ -460,38 +455,37 @@ mod test {
         circuit.output(or_gate_id).unwrap();
         assert_eq!(circuit.input_len(), 3);
         assert_eq!(circuit.output_len(), 1);
-        assert_eq!(circuit.depth_whole(), 2);
 
         let inputs = vec![true, true, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![true, true, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![true, false, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![true, false, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
 
         let inputs = vec![false, true, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false, true, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
 
         let inputs = vec![false, false, true];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, true);
 
         let inputs = vec![false, false, false];
-        let output = circuit.eval_first_output(&inputs, None).unwrap();
+        let output = circuit.eval_output(&inputs, &WireId(0), None).unwrap();
         assert_eq!(output, false);
     }
 }
