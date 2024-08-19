@@ -52,7 +52,7 @@ class TestPHFE(unittest.TestCase):
 
     def test_partial_garbling(self):
         # Define the symbols
-        x1, x2, x3, z1, z2 = sp.symbols("x1 x2 x3 z1 z2")
+        x1, x2, x3 = sp.symbols("x1 x2 x3")
 
         # Example polynomials for testing
         p1 = 3 * x1 * x2 + 5 * x2 * x3 + 7
@@ -61,7 +61,6 @@ class TestPHFE(unittest.TestCase):
         pgc = partial_garbling_polys(p1, p2)
         # print(pgc)
         lx_bar = pgc["lx_bar"]
-        print(lx_bar)
         num_rows = lx_bar.rows
         t = sp.Matrix([[random.randint(0, 100) for _ in range(num_rows)]])
         t_bar = t[:, -2:]
@@ -85,8 +84,7 @@ class TestPHFE(unittest.TestCase):
             p1.subs({x1: x1_val, x2: x2_val, x3: x3_val}) * z1_val
             + p2.subs({x1: x1_val, x2: x2_val, x3: x3_val}) * z2_val
         )
-        print(out)
-        print(expected_out)
+        self.assertEqual(out[0, 0], expected_out)
 
 
 if __name__ == "__main__":

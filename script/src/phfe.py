@@ -6,10 +6,10 @@ import queue
 
 
 def partial_garbling_polys(*polys):
-    graph, end_nodes = build_graph_from_polynomials(*polys)
-    adj_matrix = graph_to_adjacency_matrix(graph, end_nodes)
+    graph = build_graph_from_polynomials(*polys)
+    adj_matrix = graph_to_adjacency_matrix(graph)
     lx = build_lx_matrix(adj_matrix)
-    dfx_coeffs = build_dfx_coeffs(lx)
+    dfx_coeffs = build_dfx_coeffs(lx, len(polys))
     lx_bar = lx[: -len(polys), :].transpose()
     out = {}
     out["dfx_coeffs"] = dfx_coeffs
@@ -24,13 +24,13 @@ def build_graph_from_polynomials(*polys):
     graph.add_node(start_node, label="Start")
 
     # Initialize the node_of_mono map
-    end_nodes = []
+    # end_nodes = []
 
     for i, poly in enumerate(polys):
         node_of_mono = {}
         # Create a unique end node for each polynomial
         end_node = 10000 + i
-        end_nodes.append(end_node)
+        # end_nodes.append(end_node)
         graph.add_node(end_node, label="End")
 
         for term in poly.as_ordered_terms():
@@ -112,32 +112,15 @@ def build_graph_from_polynomials(*polys):
                 #     cur_node = parent_node
                 #     node_of_mono[parent_node_vars] = parent_node
 
-    return graph, end_nodes
+    return graph
 
 
-def graph_to_adjacency_matrix(graph, end_nodes):
+def graph_to_adjacency_matrix(graph):
     num_nodes = len(graph.nodes)
     # Initialize the adjacency matrix with Zero
     adj_matrix = sp.Matrix(num_nodes, num_nodes, lambda i, j: sp.S.Zero)
 
-    # node_renaming = {}
-    # rename = lambda x: node_renaming[x] if x in node_renaming else x
-    # for i, end_node in enumerate(end_nodes):
-    #     print("end_node", end_node)
-    #     target_node = len(graph.nodes) - len(end_nodes) + i
-    #     print("target_node", target_node)
-    #     node_renaming[end_node] = target_node
-    #     node_renaming[target_node] = end_node
-
-    # for egde in graph.edges(data=True):
-    #     (source, target, data) = egde
-    #     if source > target:
-    #         node_renaming[source] = target
-    #         node_renaming[target] = source
-    # print(node_renaming)
-
     node_list = sorted(list(graph.nodes))
-    print(node_list)
 
     # Iterate over the edges and populate the adjacency matrix
     for u, v, data in graph.edges(data=True):
@@ -145,17 +128,6 @@ def graph_to_adjacency_matrix(graph, end_nodes):
         j = node_list.index(v)
         adj_matrix[i, j] = data["weight"]
 
-    # # Adjust end nodes indices
-    # for i, end_node in enumerate(end_nodes):
-    #     end_idx = node_list.index(end_node)
-    #     target_idx = num_nodes - len(end_nodes) + i
-    #     if end_idx != target_idx:
-    #         adj_matrix.row_swap(end_idx, target_idx)
-    #         adj_matrix.col_swap(end_idx, target_idx)
-    #         node_list[end_idx], node_list[target_idx] = (
-    #             node_list[target_idx],
-    #             node_list[end_idx],
-    #         )
     return adj_matrix
 
 
@@ -165,29 +137,22 @@ def build_lx_matrix(adj_matrix):
         adj_matrix.shape[1],
         lambda i, j: sp.S.One if i == j else sp.S.Zero,
     )
-    sp.pprint(adj_matrix)
     lx = adj_matrix - idx_matrix
-    sp.pprint(lx)
     lx.col_del(0)
-    # lx.row_del(-1)
-    # lx.col_del(-1)
-    sp.pprint(lx)
     return lx
 
 
-def build_dfx_coeffs(lx):
+def build_dfx_coeffs(lx, num_polys):
     num_rows = lx.rows
     last_column = lx.cols
     coeffs = []
-
+    # sp.pprint(lx)
     for i in range(num_rows):
         sub_matrix = lx.copy()
         sub_matrix.row_del(i)
-        # print(sub_matrix)
-        # print(sub_matrix.shape)
-        # print(np.vectorize(lambda x: type(x))(sub_matrix))
+        # sp.pprint(sub_matrix)
         det = sub_matrix.det()
-        sign = sp.Integer((-1) ** ((i + 1) * (last_column + 1)))
+        sign = sp.Integer((-1) ** ((i + 1) + (last_column + 1)))
         coeffs.append(sign * det)
 
-    return coeffs
+    return coeffs[-num_polys:] + coeffs[:-num_polys]
