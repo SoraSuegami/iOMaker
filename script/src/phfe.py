@@ -1,8 +1,6 @@
 import sympy as sp
 import networkx as nx
-import queue
-
-# import numpy as np
+from sympy.printing import pretty
 
 
 def partial_garbling_polys(*polys):
@@ -15,6 +13,17 @@ def partial_garbling_polys(*polys):
     out["dfx_coeffs"] = dfx_coeffs
     out["lx_bar"] = lx_bar
     return out
+
+
+def pgc_to_json(pgc):
+    pgc_json = {}
+    # pgc_json["lx_bar"] = pgc["lx_bar"].applyfunc(lambda x: pretty(x, use_unicode=False))
+    pgc_json["lx_bar"] = [
+        [pretty(x, use_unicode=False) for x in row] for row in pgc["lx_bar"].tolist()
+    ]
+    pgc_json["dfx_coeffs"] = [pretty(x, use_unicode=False) for x in pgc["dfx_coeffs"]]
+    print(pgc_json)
+    return pgc_json
 
 
 def build_graph_from_polynomials(*polys):

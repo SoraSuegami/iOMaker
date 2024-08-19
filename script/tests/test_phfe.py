@@ -3,11 +3,14 @@ import networkx as nx
 import numpy as np
 import unittest
 import random
+import json
 from src.phfe import (
     build_graph_from_polynomials,
     graph_to_adjacency_matrix,
     partial_garbling_polys,
+    pgc_to_json,
 )
+from sympy.printing import pretty
 
 
 class TestPHFE(unittest.TestCase):
@@ -60,6 +63,9 @@ class TestPHFE(unittest.TestCase):
 
         pgc = partial_garbling_polys(p1, p2)
         # print(pgc)
+        # print(pretty(pgc, use_unicode=False))
+        with open("test_phfe_output.json", "w") as f:
+            json.dump(pgc_to_json(pgc), f, ensure_ascii=False, indent=4)
         lx_bar = pgc["lx_bar"]
         num_rows = lx_bar.rows
         t = sp.Matrix([[random.randint(0, 100) for _ in range(num_rows)]])
