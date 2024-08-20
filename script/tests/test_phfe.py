@@ -8,7 +8,7 @@ from src.phfe import (
     build_graph_from_polynomials,
     graph_to_adjacency_matrix,
     partial_garbling_polys,
-    pgc_to_json,
+    pgb_to_json,
 )
 from sympy.printing import pretty
 
@@ -61,12 +61,12 @@ class TestPHFE(unittest.TestCase):
         p1 = 3 * x1 * x2 + 5 * x2 * x3 + 7
         p2 = 2 * x1 * x3 + 4 * x2 + 6
 
-        pgc = partial_garbling_polys(p1, p2)
+        pgb = partial_garbling_polys(p1, p2)
         # print(pgc)
         # print(pretty(pgc, use_unicode=False))
         with open("test_phfe_output.json", "w") as f:
-            json.dump(pgc_to_json(pgc), f, ensure_ascii=False, indent=4)
-        lx_bar = pgc["lx_bar"]
+            json.dump(pgb_to_json(pgb), f, ensure_ascii=False, indent=4)
+        lx_bar = pgb["lx_bar"]
         num_rows = lx_bar.rows
         t = sp.Matrix([[random.randint(0, 100) for _ in range(num_rows)]])
         t_bar = t[:, -2:]
@@ -81,7 +81,7 @@ class TestPHFE(unittest.TestCase):
         lx_bar_substituted = lx_bar.subs({x1: x1_val, x2: x2_val, x3: x3_val})
         pfx = (z_vec - t_bar).row_join(t * lx_bar_substituted)
         # print(pfx.shape)
-        dfx_coeffs = sp.Matrix(pgc["dfx_coeffs"])
+        dfx_coeffs = sp.Matrix(pgb["dfx_coeffs"])
         # print(dfx_coeffs.shape)
         dfx = dfx_coeffs.subs({x1: x1_val, x2: x2_val, x3: x3_val})
         # print(dfx)

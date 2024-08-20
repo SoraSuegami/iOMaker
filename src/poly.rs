@@ -1,8 +1,19 @@
+use std::collections::HashMap;
+
 use ark_ff::{Field, PrimeField};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct Variable(pub u32);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum VariableType {
+    Private,
+    Public,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Variable {
+    pub index: u32,
+    pub variable_type: VariableType,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Monomial<F: PrimeField> {
@@ -24,10 +35,10 @@ impl<F: PrimeField> Monomial<F> {
         self.variables.len()
     }
 
-    pub fn eval(&self, assignment: &[F]) -> F {
+    pub fn eval(&self, assignment: &HashMap<Variable, F>) -> F {
         let mut result = F::one();
         for variable in &self.variables {
-            result *= assignment[variable.0 as usize];
+            result *= assignment[variable];
         }
         result *= self.coefficient;
         result
@@ -52,7 +63,7 @@ impl<F: PrimeField> Polynomial<F> {
             .unwrap_or(0)
     }
 
-    pub fn eval(&self, assignment: &[F]) -> F {
+    pub fn eval(&self, assignment: &HashMap<Variable, F>) -> F {
         self.monomials
             .iter()
             .map(|monomial| monomial.eval(assignment))

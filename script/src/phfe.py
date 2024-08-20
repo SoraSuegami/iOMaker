@@ -15,15 +15,15 @@ def partial_garbling_polys(*polys):
     return out
 
 
-def pgc_to_json(pgc):
-    pgc_json = {}
+def pgb_to_json(pgb):
+    pgb_json = {}
     # pgc_json["lx_bar"] = pgc["lx_bar"].applyfunc(lambda x: pretty(x, use_unicode=False))
-    pgc_json["lx_bar"] = [
-        [pretty(x, use_unicode=False) for x in row] for row in pgc["lx_bar"].tolist()
+    pgb_json["lx_bar"] = [
+        [pretty(x, use_unicode=False) for x in row] for row in pgb["lx_bar"].tolist()
     ]
-    pgc_json["dfx_coeffs"] = [pretty(x, use_unicode=False) for x in pgc["dfx_coeffs"]]
-    print(pgc_json)
-    return pgc_json
+    pgb_json["dfx_coeffs"] = [pretty(x, use_unicode=False) for x in pgb["dfx_coeffs"]]
+    print(pgb_json)
+    return pgb_json
 
 
 def build_graph_from_polynomials(*polys):
