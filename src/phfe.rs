@@ -229,19 +229,19 @@ mod test {
         );
         let mut rng = rand::thread_rng();
         let (mpk, msk) = phfe.setup(&mut rng);
-        let x = DVector::from_fn(3, |_, _| Fr::from(rng.gen_range(0..1)));
-        let z1 = DVector::from_fn(2, |_, _| Fr::from(rng.gen_range(0..1)));
-        let z2 = DVector::from_fn(3, |_, _| Fr::from(rng.gen_range(0..1)));
+        let x = DVector::from_fn(3, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let z1 = DVector::from_fn(2, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let z2 = DVector::from_fn(3, |_, _| Fr::from(rng.gen_range(0..=1)));
         let ct = phfe.enc(&mpk, &x, &z1, &z2, &mut rng);
         let fsk = phfe.gen_fsk(&msk, &func, &mut rng);
         let out_gt = phfe.dec(&ct, &func, &fsk);
-        let out = if out_gt == PairingOutput::generator() {
-            Fr::one()
-        } else if out_gt == PairingOutput::zero() {
-            Fr::zero()
-        } else {
-            panic!("Unexpected output")
-        };
+        // let out = if out_gt == PairingOutput::generator() {
+        //     Fr::one()
+        // } else if out_gt == PairingOutput::zero() {
+        //     Fr::zero()
+        // } else {
+        //     panic!("Unexpected output")
+        // };
         let expected_out = {
             let mut x_assignment = HashMap::<Variable, Fr>::new();
             for (idx, val) in x.iter().enumerate() {
@@ -253,22 +253,13 @@ mod test {
                     *val,
                 );
             }
-            let y1y2 = ct.y1_vec.kronecker(&ct.y2_vec);
+            let z1z2 = z1.kronecker(&z2);
             let fx = DVector::from_iterator(
-                y1y2.len(),
-                func.polys
-                    .iter()
-                    .map(|f| PhfeElement::Scalar(f.eval(&x_assignment))),
+                z1z2.len(),
+                func.polys.iter().map(|f| f.eval(&x_assignment)),
             );
-            let y1y2f = y1y2.transpose() * &fx;
-            if let PhfeElement::Gt(y1y2f) = y1y2f[(0, 0)] {
-                y1y2f
-            } else {
-                panic!("Unexpected element type")
-            }
+            (z1z2.transpose() * &fx)[(0, 0)]
         };
-        println!("out: {:?}", out);
-        println!("expected_out: {:?}", expected_out);
-        assert_eq!(out_gt, expected_out);
+        assert_eq!(out_gt, PairingOutput::generator() * expected_out);
     }
 }
