@@ -3,26 +3,42 @@ import networkx as nx
 from sympy.printing import pretty
 
 
-def partial_garbling_polys(*polys):
+def partial_garbling_polys(
+    num_public_vars, num_private_vars1, num_private_vars2, *polys
+):
     graph = build_graph_from_polynomials(*polys)
     adj_matrix = graph_to_adjacency_matrix(graph)
     lx = build_lx_matrix(adj_matrix)
     dfx_coeffs = build_dfx_coeffs(lx, len(polys))
-    lx_bar = lx[: -len(polys), :].transpose()
+    l0, l1 = build_l0_and_l1(lx, len(polys), num_public_vars)
+    if num_private_vars1 * num_private_vars2 != len(polys):
+        raise ValueError("Invalid number of polynomials")
     out = {}
+    out["num_public_vars"] = num_public_vars
+    out["num_private_vars1"] = num_private_vars1
+    out["num_private_vars2"] = num_private_vars2
+    out["polys"] = polys
     out["dfx_coeffs"] = dfx_coeffs
-    out["lx_bar"] = lx_bar
+    out["l0"] = l0
+    out["l1"] = l1
     return out
 
 
 def pgb_to_json(pgb):
     pgb_json = {}
-    # pgc_json["lx_bar"] = pgc["lx_bar"].applyfunc(lambda x: pretty(x, use_unicode=False))
-    pgb_json["lx_bar"] = [
-        [pretty(x, use_unicode=False) for x in row] for row in pgb["lx_bar"].tolist()
+    pgb_json["num_public_vars"] = pgb["num_public_vars"]
+    pgb_json["num_private_vars1"] = pgb["num_private_vars1"]
+    pgb_json["num_private_vars2"] = pgb["num_private_vars2"]
+    pgb_json["polys"] = [pretty(poly, use_unicode=False) for poly in pgb["polys"]]
+    pgb_json["dfx_coeffs"] = [
+        pretty(poly, use_unicode=False) for poly in pgb["dfx_coeffs"]
     ]
-    pgb_json["dfx_coeffs"] = [pretty(x, use_unicode=False) for x in pgb["dfx_coeffs"]]
-    print(pgb_json)
+    pgb_json["l0"] = [
+        [pretty(x, use_unicode=False) for x in row] for row in pgb["l0"].tolist()
+    ]
+    pgb_json["l1"] = [
+        [pretty(x, use_unicode=False) for x in row] for row in pgb["l1"].tolist()
+    ]
     return pgb_json
 
 
@@ -165,3 +181,26 @@ def build_dfx_coeffs(lx, num_polys):
         coeffs.append(sign * det)
 
     return coeffs[-num_polys:] + coeffs[:-num_polys]
+
+
+def build_l0_and_l1(lx, num_polys, num_pub_vars):
+    lx_bar = lx[:-num_polys, :].transpose()
+    l0 = sp.Matrix(lx_bar.rows, lx_bar.cols, lambda i, j: sp.S.Zero)
+    l1 = sp.Matrix(lx_bar.rows, lx_bar.cols * num_pub_vars, lambda i, j: sp.S.Zero)
+    for i in range(lx_bar.rows):
+        for j in range(lx_bar.cols):
+            val = lx_bar[i, j]
+            coeff, *monomials = val.as_coeff_mul()
+            if len(monomials[0]) == 0:
+                l0[i, j] = coeff
+                continue
+            var = str(monomials[0][0])
+            if var.startswith("x"):
+                k = int(var[1:])
+                l1[i, k * lx_bar.cols + j] = coeff
+            else:
+                raise ValueError("Invalid value in lx_bar")
+    # print("l0", l0)
+    # print("l1", l1)
+    # print("lx_bar", lx_bar)
+    return l0, l1
