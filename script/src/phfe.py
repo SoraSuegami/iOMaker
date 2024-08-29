@@ -1,16 +1,25 @@
 import sympy as sp
 import networkx as nx
 from sympy.printing import pretty
+import argparse
+import json
+import concurrent.futures
 
 
 def partial_garbling_polys(
     num_public_vars, num_private_vars1, num_private_vars2, *polys
 ):
     graph = build_graph_from_polynomials(*polys)
+    print("graph constructed")
     adj_matrix = graph_to_adjacency_matrix(graph)
+    print("adj_matrix constructed")
     lx = build_lx_matrix(adj_matrix)
+    # sp.pprint(lx)
+    print("lx constructed")
     dfx_coeffs = build_dfx_coeffs(lx, len(polys))
+    print("dfx_coeffs constructed")
     l0, l1 = build_l0_and_l1(lx, len(polys), num_public_vars)
+    print("l0 and l1 constructed")
     if num_private_vars1 * num_private_vars2 != len(polys):
         raise ValueError("Invalid number of polynomials")
     out = {}
@@ -171,14 +180,29 @@ def build_dfx_coeffs(lx, num_polys):
     num_rows = lx.rows
     last_column = lx.cols
     coeffs = []
-    # sp.pprint(lx)
-    for i in range(num_rows):
+    print(num_rows)
+
+    def process_row(i):
         sub_matrix = lx.copy()
         sub_matrix.row_del(i)
-        # sp.pprint(sub_matrix)
         det = sub_matrix.det()
+        print(i, det)
         sign = sp.Integer((-1) ** ((i + 1) + (last_column + 1)))
-        coeffs.append(sign * det)
+        return sign * det
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(process_row, i) for i in range(num_rows)]
+        for future in concurrent.futures.as_completed(futures):
+            coeffs.append(future.result())
+    # sp.pprint(lx)
+    # for i in range(num_rows):
+    #     sub_matrix = lx.copy()
+    #     sub_matrix.row_del(i)
+    #     # sp.pprint(sub_matrix)
+    #     det = sub_matrix.det()
+    #     print(det)
+    #     sign = sp.Integer((-1) ** ((i + 1) + (last_column + 1)))
+    #     coeffs.append(sign * det)
 
     return coeffs[-num_polys:] + coeffs[:-num_polys]
 
@@ -200,7 +224,45 @@ def build_l0_and_l1(lx, num_polys, num_pub_vars):
                 l1[i, k * lx_bar.cols + j] = coeff
             else:
                 raise ValueError("Invalid value in lx_bar")
-    # print("l0", l0)
-    # print("l1", l1)
-    # print("lx_bar", lx_bar)
     return l0, l1
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Arguments to PHFE")
+    parser.add_argument(
+        "num_public_vars",
+        type=int,
+        help="Number of public variables in the polynomials",
+    )
+    parser.add_argument(
+        "num_private_vars1",
+        type=int,
+        help="Number of the first private variables in the polynomials",
+    )
+    parser.add_argument(
+        "num_private_vars2",
+        type=int,
+        help="Number of the second private variables in the polynomials",
+    )
+    parser.add_argument(
+        "polys",
+        type=str,
+        nargs="+",
+        help="List of polynomials in the form of strings",
+    )
+    parser.add_argument(
+        "out",
+        type=str,
+        help="Output file to write the JSON representation",
+    )
+    args = parser.parse_args()
+    num_public_vars = args.num_public_vars
+    num_private_vars1 = args.num_private_vars1
+    num_private_vars2 = args.num_private_vars2
+    polys = [sp.sympify(poly) for poly in args.polys]
+    print(num_public_vars, num_private_vars1, num_private_vars2, polys)
+    pgb = partial_garbling_polys(
+        num_public_vars, num_private_vars1, num_private_vars2, *polys
+    )
+    with open(args.out, "w") as f:
+        json.dump(pgb_to_json(pgb), f, ensure_ascii=False, indent=4)
