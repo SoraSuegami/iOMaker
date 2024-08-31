@@ -227,7 +227,7 @@ mod test {
             func.num_public_vars,
             func.num_private_vars1,
             func.num_private_vars2,
-            1,
+            2,
         );
         let mut rng = rand::thread_rng();
         let (mpk, msk) = phfe.setup(&mut rng);
@@ -273,7 +273,7 @@ mod test {
             func.num_public_vars,
             func.num_private_vars1,
             func.num_private_vars2,
-            1,
+            2,
         );
         let mut rng = rand::thread_rng();
         let (mpk, msk) = phfe.setup(&mut rng);
@@ -313,7 +313,7 @@ mod test {
             func.num_public_vars,
             func.num_private_vars1,
             func.num_private_vars2,
-            1,
+            2,
         );
         let mut rng = rand::thread_rng();
         let (mpk, msk) = phfe.setup(&mut rng);
