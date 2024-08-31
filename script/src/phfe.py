@@ -179,7 +179,7 @@ def build_lx_matrix(adj_matrix):
 def build_dfx_coeffs(lx, num_polys):
     num_rows = lx.rows
     last_column = lx.cols
-    coeffs = []
+    coeffs = [sp.Integer(0)] * num_rows
     print(num_rows)
 
     def process_row(i):
@@ -188,12 +188,14 @@ def build_dfx_coeffs(lx, num_polys):
         det = sub_matrix.det()
         print(i, det)
         sign = sp.Integer((-1) ** ((i + 1) + (last_column + 1)))
-        return sign * det
+        return (i, sign * det)
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(process_row, i) for i in range(num_rows)]
         for future in concurrent.futures.as_completed(futures):
-            coeffs.append(future.result())
+            (i, coeff) = future.result()
+            coeffs[i] = coeff
+            # coeffs.append(future.result())
     # sp.pprint(lx)
     # for i in range(num_rows):
     #     sub_matrix = lx.copy()

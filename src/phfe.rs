@@ -277,9 +277,9 @@ mod test {
         );
         let mut rng = rand::thread_rng();
         let (mpk, msk) = phfe.setup(&mut rng);
-        let x = DVector::from_fn(20, |_, _| Fr::from(rng.gen_range(0..1)));
-        let z1 = DVector::from_fn(4, |_, _| Fr::from(rng.gen_range(0..1)));
-        let z2 = DVector::from_fn(5, |_, _| Fr::from(rng.gen_range(0..1)));
+        let x = DVector::from_fn(14, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let z1 = DVector::from_fn(2, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let z2 = DVector::from_fn(5, |_, _| Fr::from(rng.gen_range(0..=1)));
         let ct = phfe.enc(&mpk, &x, &z1, &z2, &mut rng);
         let fsk = phfe.gen_fsk(&msk, &func, &mut rng);
         let out_gt = phfe.dec(&ct, &func, &fsk);
