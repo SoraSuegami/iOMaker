@@ -304,4 +304,44 @@ mod test {
         println!("expected_out: {:?}", expected_out);
         assert_eq!(out_gt, PairingOutput::generator() * expected_out);
     }
+
+    #[test]
+    fn test_valid_case3() {
+        let func_json = include_str!("./phfe/tests/test_phfe3.json");
+        let func: PhfeFunc<Fr> = PhfeFunc::from_str(&func_json).unwrap();
+        let phfe = Phfe::<Bn254>::new(
+            func.num_public_vars,
+            func.num_private_vars1,
+            func.num_private_vars2,
+            1,
+        );
+        let mut rng = rand::thread_rng();
+        let (mpk, msk) = phfe.setup(&mut rng);
+        let x = DVector::from_fn(20, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let z1 = DVector::from_fn(4, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let z2 = DVector::from_fn(5, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let ct = phfe.enc(&mpk, &x, &z1, &z2, &mut rng);
+        let fsk = phfe.gen_fsk(&msk, &func, &mut rng);
+        let out_gt = phfe.dec(&ct, &func, &fsk);
+        let expected_out = {
+            let mut x_assignment = HashMap::<Variable, Fr>::new();
+            for (idx, val) in x.iter().enumerate() {
+                x_assignment.insert(
+                    Variable {
+                        index: idx as u32,
+                        variable_type: VariableType::Public,
+                    },
+                    *val,
+                );
+            }
+            let z1z2 = z1.kronecker(&z2);
+            let fx = DVector::from_iterator(
+                z1z2.len(),
+                func.polys.iter().map(|f| f.eval(&x_assignment)),
+            );
+            (z1z2.transpose() * &fx)[(0, 0)]
+        };
+        println!("expected_out: {:?}", expected_out);
+        assert_eq!(out_gt, PairingOutput::generator() * expected_out);
+    }
 }
