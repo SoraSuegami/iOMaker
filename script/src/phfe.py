@@ -4,6 +4,7 @@ from sympy.printing import pretty
 import argparse
 import json
 import concurrent.futures
+import random
 
 
 def partial_garbling_polys(
@@ -176,22 +177,24 @@ def build_lx_matrix(adj_matrix):
     return lx
 
 
+def process_row(i, lx, last_column):
+    sub_matrix = lx.copy()
+    sub_matrix.row_del(i)
+    det = sub_matrix.det()
+    print(i, det)
+    sign = sp.Integer((-1) ** ((i + 1) + (last_column + 1)))
+    return (i, sign * det)
+
+
 def build_dfx_coeffs(lx, num_polys):
     num_rows = lx.rows
     last_column = lx.cols
     coeffs = [sp.Integer(0)] * num_rows
     print(num_rows)
-
-    def process_row(i):
-        sub_matrix = lx.copy()
-        sub_matrix.row_del(i)
-        det = sub_matrix.det()
-        print(i, det)
-        sign = sp.Integer((-1) ** ((i + 1) + (last_column + 1)))
-        return (i, sign * det)
-
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(process_row, i) for i in range(num_rows)]
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = [
+            executor.submit(process_row, i, lx, last_column) for i in range(num_rows)
+        ]
         for future in concurrent.futures.as_completed(futures):
             (i, coeff) = future.result()
             coeffs[i] = coeff
@@ -229,6 +232,26 @@ def build_l0_and_l1(lx, num_polys, num_pub_vars):
     return l0, l1
 
 
+def generate_random_polynomials(num_public_vars, num_private_vars1, num_private_vars2):
+    public_vars = sp.symbols(f"x0:{num_public_vars}")
+
+    def random_polynomial(variables, num_terms=5):
+        poly = 0
+        for _ in range(num_terms):
+            term = 1
+            for var in random.sample(variables, random.randint(1, len(variables))):
+                term *= var
+            poly += term * random.randint(0, 1)
+        return poly
+
+    polynomials = [
+        random_polynomial(public_vars)
+        for _ in range(num_private_vars1 * num_private_vars2)
+    ]
+
+    return polynomials
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Arguments to PHFE")
     parser.add_argument(
@@ -249,7 +272,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "polys",
         type=str,
-        nargs="+",
+        nargs="*",
+        default=[],
         help="List of polynomials in the form of strings",
     )
     parser.add_argument(
@@ -261,7 +285,13 @@ if __name__ == "__main__":
     num_public_vars = args.num_public_vars
     num_private_vars1 = args.num_private_vars1
     num_private_vars2 = args.num_private_vars2
-    polys = [sp.sympify(poly) for poly in args.polys]
+    polys = []
+    if len(args.polys) == 0:
+        polys = generate_random_polynomials(
+            num_public_vars, num_private_vars1, num_private_vars2
+        )
+    else:
+        polys = [sp.sympify(poly) for poly in args.polys]
     print(num_public_vars, num_private_vars1, num_private_vars2, polys)
     pgb = partial_garbling_polys(
         num_public_vars, num_private_vars1, num_private_vars2, *polys
