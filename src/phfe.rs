@@ -217,6 +217,7 @@ impl<C: Pairing> Phfe<C> {
 mod test {
     use super::*;
     use ark_bn254::{Bn254, Fr};
+    use ark_std::{end_timer, start_timer};
     use num_traits::{One, Zero};
 
     #[test]
@@ -316,13 +317,21 @@ mod test {
             2,
         );
         let mut rng = rand::thread_rng();
+        let setup_timer = start_timer!(|| "setup keys");
         let (mpk, msk) = phfe.setup(&mut rng);
+        end_timer!(setup_timer);
         let x = DVector::from_fn(20, |_, _| Fr::from(rng.gen_range(0..=1)));
         let z1 = DVector::from_fn(4, |_, _| Fr::from(rng.gen_range(0..=1)));
         let z2 = DVector::from_fn(5, |_, _| Fr::from(rng.gen_range(0..=1)));
+        let enc_timer = start_timer!(|| "encryption");
         let ct = phfe.enc(&mpk, &x, &z1, &z2, &mut rng);
+        end_timer!(enc_timer);
+        let fsk_timer = start_timer!(|| "fsk generation");
         let fsk = phfe.gen_fsk(&msk, &func, &mut rng);
+        end_timer!(fsk_timer);
+        let dec_timer = start_timer!(|| "decryption");
         let out_gt = phfe.dec(&ct, &func, &fsk);
+        end_timer!(dec_timer);
         let expected_out = {
             let mut x_assignment = HashMap::<Variable, Fr>::new();
             for (idx, val) in x.iter().enumerate() {
